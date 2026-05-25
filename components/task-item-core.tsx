@@ -67,6 +67,14 @@ export function TaskItemCore({
   const [subtaskTitle, setSubtaskTitle] = useState("");
   const [justCompleted, setJustCompleted] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const ignoreTitleBlurRef = useRef(false);
+  const titleBlurTimeoutRef = useRef<number | null>(null);
+
+  function setItemRef(node: HTMLDivElement | null) {
+    itemRef.current = node;
+    containerRef?.(node);
+  }
 
   useEffect(() => {
     if (!editingTitle) {
@@ -82,6 +90,29 @@ export function TaskItemCore({
     const len = input.value.length;
     input.setSelectionRange(len, len);
   }, [editingTitle]);
+
+  useEffect(() => {
+    return () => {
+      if (titleBlurTimeoutRef.current !== null) {
+        window.clearTimeout(titleBlurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!addingSubtask && !notesOpen && !dueOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (itemRef.current?.contains(event.target as Node)) return;
+      setAddingSubtask(false);
+      setSubtaskTitle("");
+      setNotesOpen(false);
+      setDueOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [addingSubtask, notesOpen, dueOpen]);
 
   async function toggleDone() {
     if (!done) {
@@ -114,6 +145,40 @@ export function TaskItemCore({
     await onUpdate({ id: task._id, title: trimmed });
   }
 
+  function scheduleTitleBlurSave() {
+    if (titleBlurTimeoutRef.current !== null) {
+      window.clearTimeout(titleBlurTimeoutRef.current);
+    }
+    titleBlurTimeoutRef.current = window.setTimeout(() => {
+      titleBlurTimeoutRef.current = null;
+      if (ignoreTitleBlurRef.current) {
+        ignoreTitleBlurRef.current = false;
+        return;
+      }
+      void saveTitle();
+    }, 150);
+  }
+
+  async function handleDelete(event: React.SyntheticEvent) {
+    event.stopPropagation();
+    ignoreTitleBlurRef.current = false;
+    if (titleBlurTimeoutRef.current !== null) {
+      window.clearTimeout(titleBlurTimeoutRef.current);
+      titleBlurTimeoutRef.current = null;
+    }
+    const title = titleDraft.trim() || task.title;
+    if (!confirm(`Delete "${title}"?`)) return;
+    setEditingTitle(false);
+    await onDelete(task._id);
+  }
+
+  function handleDeletePress(event: React.PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    ignoreTitleBlurRef.current = true;
+    void handleDelete(event);
+  }
+
   async function handleAddSubtask(event: FormEvent) {
     event.preventDefault();
     if (!subtaskTitle.trim()) return;
@@ -122,12 +187,9 @@ export function TaskItemCore({
     setAddingSubtask(false);
   }
 
-  async function handleDelete(event: React.MouseEvent) {
-    event.stopPropagation();
-    event.preventDefault();
-    if (!confirm(`Delete "${task.title}"?`)) return;
-    setEditingTitle(false);
-    await onDelete(task._id);
+  function closeSubtaskForm() {
+    setAddingSubtask(false);
+    setSubtaskTitle("");
   }
 
   const dueLabel = task.dueDate ? formatDueLabel(task.dueDate) : null;
@@ -135,7 +197,7 @@ export function TaskItemCore({
 
   return (
     <div
-      ref={containerRef}
+      ref={setItemRef}
       style={containerStyle}
       className={cn(
         "group task-item",
@@ -184,7 +246,7 @@ export function TaskItemCore({
               ref={titleInputRef}
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={saveTitle}
+              onBlur={scheduleTitleBlurSave}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void saveTitle();
                 if (e.key === "Escape") {
@@ -262,15 +324,18 @@ export function TaskItemCore({
                 note
               </button>
 
-              {!done && subtasks.length === 0 && (
+              {!done && (
                 <button
                   type="button"
                   data-no-edit
                   onClick={(e) => {
                     e.stopPropagation();
-                    setAddingSubtask(true);
+                    setAddingSubtask((open) => {
+                      if (open) setSubtaskTitle("");
+                      return !open;
+                    });
                   }}
-                  className="task-meta-item"
+                  className={cn("task-meta-item", addingSubtask && "task-meta-active")}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   subtask
@@ -281,7 +346,7 @@ export function TaskItemCore({
                 <button
                   type="button"
                   data-no-edit
-                  onClick={handleDelete}
+                  onPointerDown={handleDeletePress}
                   className="task-meta-item task-meta-delete md:hidden"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -341,11 +406,21 @@ export function TaskItemCore({
                 autoFocus
                 value={subtaskTitle}
                 onChange={(e) => setSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSubtaskForm();
+                }}
                 placeholder="Subtask title"
                 className="input-field flex-1 py-1.5 text-sm"
               />
               <button type="submit" className="btn-primary px-3 py-1.5 text-sm">
                 Add
+              </button>
+              <button
+                type="button"
+                onClick={closeSubtaskForm}
+                className="rounded-lg px-3 py-1.5 text-sm text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]"
+              >
+                Cancel
               </button>
             </form>
           )}
@@ -361,7 +436,7 @@ export function TaskItemCore({
           <button
             type="button"
             onClick={handleDelete}
-            className="rounded p-1.5 text-[var(--muted)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
+            className="hidden rounded p-1.5 text-[var(--muted)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] md:inline-flex"
             aria-label="Delete task"
           >
             <Trash2 className="h-3.5 w-3.5" />
