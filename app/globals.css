@@ -1,26 +1,226 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3efe6;
+  --foreground: #1f2a24;
+  --surface: #faf7f0;
+  --surface-muted: #ebe4d7;
+  --border: #d9d0c0;
+  --border-strong: #b8aa95;
+  --muted: #667066;
+  --accent: #5b7553;
+  --accent-soft: #dfe8db;
+  --danger: #9a4b3f;
+  --danger-soft: #f4ddd8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.input-field {
+  @apply w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--foreground)] outline-none transition placeholder:text-[var(--muted)] focus:border-[var(--accent)];
+}
+
+.input-ghost {
+  @apply w-full border-0 bg-transparent px-0 py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:ring-0;
+}
+
+.select-field {
+  @apply rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)];
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.section-label {
+  @apply text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--muted)];
+}
+
+.icon-btn {
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)];
+}
+
+.sidebar-brand {
+  @apply flex items-center gap-2.5 px-4 py-5;
+}
+
+.sidebar-search {
+  @apply mx-3 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--muted)];
+}
+
+.sidebar-nav-item {
+  @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-[var(--foreground)] transition hover:bg-[var(--surface-muted)];
+}
+
+.sidebar-nav-item-active {
+  @apply bg-[var(--surface-muted)] font-medium;
+}
+
+.sidebar-nav-count {
+  @apply ml-auto text-xs tabular-nums text-[var(--muted)];
+}
+
+.sidebar-project-icon {
+  @apply h-3 w-3 shrink-0 rounded-sm;
+}
+
+.sidebar-project-icon-outline {
+  @apply h-3 w-3 shrink-0 rounded-sm border border-[var(--border-strong)] bg-transparent;
+}
+
+.panel-main {
+  @apply flex h-full flex-col bg-[var(--background)];
+}
+
+.panel-content {
+  @apply mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-6 py-8 sm:px-10;
+}
+
+.panel-breadcrumb {
+  @apply text-xs text-[var(--muted)];
+}
+
+.panel-title {
+  @apply mt-1 text-3xl font-semibold tracking-tight text-[var(--foreground)] sm:text-4xl;
+}
+
+.filter-tabs {
+  @apply inline-flex rounded-lg border border-[var(--border)] bg-[var(--surface)] p-0.5;
+}
+
+.filter-tab {
+  @apply rounded-md px-3 py-1.5 text-xs font-medium text-[var(--muted)] transition;
+}
+
+.filter-tab-active {
+  @apply bg-[var(--surface-muted)] text-[var(--foreground)];
+}
+
+.add-task-row {
+  @apply flex items-center gap-3 border-b border-[var(--border)] py-3;
+}
+
+.task-item {
+  @apply py-0.5;
+}
+
+.task-item-inner {
+  @apply -mx-2 flex items-start gap-2 rounded-lg px-2 py-3 transition-colors;
+}
+
+.task-item-inner:hover,
+.task-item-inner-active {
+  @apply bg-[var(--surface-muted)]/55;
+}
+
+.task-item-done {
+  @apply opacity-80;
+}
+
+.task-item-dragging .task-item-inner {
+  @apply bg-[var(--surface)] shadow-sm;
+}
+
+.task-item-completed-flash {
+  animation: complete-flash 450ms ease;
+}
+
+.task-check {
+  @apply mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[var(--border-strong)] bg-transparent transition;
+}
+
+.task-check-done {
+  @apply border-[var(--accent)] bg-[var(--accent)];
+}
+
+.task-check-pop {
+  animation: check-pop 350ms ease;
+}
+
+.task-drag-handle {
+  @apply -ml-0.5 mt-0.5 rounded p-1 text-[var(--muted)] opacity-0 transition group-hover:opacity-100 hover:bg-[var(--surface)] hover:text-[var(--foreground)];
+}
+
+.task-title-input {
+  @apply w-full min-w-0 bg-transparent text-base leading-snug outline-none;
+}
+
+.task-title-display {
+  @apply block w-full cursor-text text-left text-base leading-snug;
+}
+
+.task-meta {
+  @apply pointer-events-none mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)] opacity-0 transition-opacity group-hover:opacity-100;
+}
+
+.task-item-inner-active .task-meta,
+.task-meta-visible {
+  @apply opacity-100;
+}
+
+.task-meta-item {
+  @apply pointer-events-auto inline-flex items-center gap-1 transition hover:text-[var(--foreground)];
+}
+
+.task-meta-active {
+  @apply text-[var(--accent)];
+}
+
+@keyframes check-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes complete-flash {
+  0% {
+    background-color: rgba(223, 232, 219, 0.35);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.calendar-day {
+  @apply flex min-h-14 flex-col items-center justify-start gap-1 rounded-lg border border-transparent px-2 py-2 text-sm transition hover:bg-[var(--surface-muted)];
+}
+
+.calendar-day-outside {
+  @apply text-[var(--muted)] opacity-50;
+}
+
+.calendar-day-selected {
+  @apply border-[var(--accent)] bg-[var(--accent-soft)];
+}
+
+.calendar-day-today {
+  @apply font-semibold;
+}
+
+.calendar-dot {
+  @apply h-1.5 w-1.5 rounded-full;
+}
+
+.card {
+  @apply rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5;
 }

@@ -1,0 +1,21 @@
+{
+  "name": "Life Dashboard",
+  "short_name": "Dashboard",
+  "description": "Projects, tasks, and calendar in one calm place.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3EFE6",
+  "theme_color": "#5B7553",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
