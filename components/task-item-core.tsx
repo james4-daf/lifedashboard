@@ -124,7 +124,9 @@ export function TaskItemCore({
 
   async function handleDelete(event: React.MouseEvent) {
     event.stopPropagation();
+    event.preventDefault();
     if (!confirm(`Delete "${task.title}"?`)) return;
+    setEditingTitle(false);
     await onDelete(task._id);
   }
 
@@ -213,7 +215,13 @@ export function TaskItemCore({
             <div
               className={cn(
                 "task-meta",
-                (notesOpen || dueOpen || addingSubtask || task.dueDate || task.notes || subtasks.length > 0) &&
+                (editingTitle ||
+                  notesOpen ||
+                  dueOpen ||
+                  addingSubtask ||
+                  task.dueDate ||
+                  task.notes ||
+                  subtasks.length > 0) &&
                   "task-meta-visible",
               )}
             >
@@ -266,6 +274,18 @@ export function TaskItemCore({
                 >
                   <Plus className="h-3.5 w-3.5" />
                   subtask
+                </button>
+              )}
+
+              {editingTitle && (
+                <button
+                  type="button"
+                  data-no-edit
+                  onClick={handleDelete}
+                  className="task-meta-item task-meta-delete md:hidden"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  delete
                 </button>
               )}
             </div>

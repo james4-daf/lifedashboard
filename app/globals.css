@@ -179,7 +179,11 @@ body {
 }
 
 .task-delete-actions-visible {
-  @apply flex opacity-100 pointer-events-auto;
+  @apply hidden opacity-100 pointer-events-auto md:flex;
+}
+
+.task-meta-delete {
+  @apply text-[var(--danger)];
 }
 
 .task-meta {
@@ -192,7 +196,7 @@ body {
 }
 
 .task-meta-item {
-  @apply pointer-events-auto inline-flex items-center gap-1 transition hover:text-[var(--foreground)];
+  @apply pointer-events-auto inline-flex min-h-10 items-center gap-1 py-1 transition hover:text-[var(--foreground)] md:min-h-0 md:py-0;
 }
 
 .task-meta-active {
