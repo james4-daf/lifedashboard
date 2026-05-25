@@ -122,6 +122,12 @@ export function TaskItemCore({
     setAddingSubtask(false);
   }
 
+  async function handleDelete(event: React.MouseEvent) {
+    event.stopPropagation();
+    if (!confirm(`Delete "${task.title}"?`)) return;
+    await onDelete(task._id);
+  }
+
   const dueLabel = task.dueDate ? formatDueLabel(task.dueDate) : null;
   const overdue = isOverdue(task.dueDate);
 
@@ -326,12 +332,15 @@ export function TaskItemCore({
         </div>
 
         <div
-          className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100"
+          className={cn(
+            "task-delete-actions",
+            editingTitle && "task-delete-actions-visible",
+          )}
           data-no-edit
         >
           <button
             type="button"
-            onClick={() => onDelete(task._id)}
+            onClick={handleDelete}
             className="rounded p-1.5 text-[var(--muted)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)]"
             aria-label="Delete task"
           >

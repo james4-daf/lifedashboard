@@ -12,6 +12,10 @@ const PROJECT_COLORS = [
   "#3D6B5E",
 ];
 
+function isDeleted(item: { deletedAt?: number }) {
+  return item.deletedAt !== undefined;
+}
+
 function sortProjects<T extends { sortOrder: number; updatedAt: number; hasOverdue: boolean }>(
   projects: T[],
 ) {
@@ -35,16 +39,21 @@ export const list = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    const visible = includeInactive
-      ? projects
-      : projects.filter((p) => p.status === "active" || p.status === "paused");
+    const visible = projects.filter((p) => {
+      if (isDeleted(p)) return false;
+      return includeInactive
+        ? true
+        : p.status === "active" || p.status === "paused";
+    });
 
     const enriched = await Promise.all(
       visible.map(async (project) => {
-        const tasks = await ctx.db
-          .query("tasks")
-          .withIndex("by_project", (q) => q.eq("projectId", project._id))
-          .collect();
+        const tasks = (
+          await ctx.db
+            .query("tasks")
+            .withIndex("by_project", (q) => q.eq("projectId", project._id))
+            .collect()
+        ).filter((task) => !isDeleted(task));
 
         const openTasks = tasks.filter((t) => t.status !== "done" && !t.parentTaskId);
         const hasOverdue = openTasks.some((t) => isOverdue(t.dueDate));
@@ -83,7 +92,7 @@ export const get = query({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const project = await ctx.db.get(args.id);
-    if (!project || project.userId !== userId) return null;
+    if (!project || project.userId !== userId || isDeleted(project)) return null;
     return project;
   },
 });
@@ -95,10 +104,12 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
-    const existing = await ctx.db
-      .query("projects")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
+    const existing = (
+      await ctx.db
+        .query("projects")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .collect()
+    ).filter((project) => !isDeleted(project));
 
     const color =
       args.color ??
@@ -128,7 +139,7 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const project = await ctx.db.get(args.id);
-    if (!project || project.userId !== userId) {
+    if (!project || project.userId !== userId || isDeleted(project)) {
       throw new Error("Project not found");
     }
 
@@ -148,19 +159,47 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     const userId = await requireUserId(ctx);
     const project = await ctx.db.get(args.id);
-    if (!project || project.userId !== userId) {
+    if (!project || project.userId !== userId || isDeleted(project)) {
       throw new Error("Project not found");
     }
 
+    const deletedAt = Date.now();
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_project", (q) => q.eq("projectId", args.id))
       .collect();
 
     for (const task of tasks) {
-      await ctx.db.delete(task._id);
+      if (!isDeleted(task)) {
+        await ctx.db.patch(task._id, { deletedAt, updatedAt: deletedAt });
+      }
     }
 
-    await ctx.db.delete(args.id);
+    await ctx.db.patch(args.id, { deletedAt, updatedAt: deletedAt });
+  },
+});
+
+export const restore = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    const project = await ctx.db.get(args.id);
+    if (!project || project.userId !== userId || !isDeleted(project)) {
+      throw new Error("Project not found");
+    }
+
+    const now = Date.now();
+    const tasks = await ctx.db
+      .query("tasks")
+      .withIndex("by_project", (q) => q.eq("projectId", args.id))
+      .collect();
+
+    for (const task of tasks) {
+      if (isDeleted(task)) {
+        await ctx.db.patch(task._id, { deletedAt: undefined, updatedAt: now });
+      }
+    }
+
+    await ctx.db.patch(args.id, { deletedAt: undefined, updatedAt: now });
   },
 });

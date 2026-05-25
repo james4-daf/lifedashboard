@@ -24,6 +24,7 @@ export default defineSchema({
     status: projectStatus,
     sortOrder: v.number(),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"]),
@@ -40,6 +41,7 @@ export default defineSchema({
     sortOrder: v.number(),
     completedAt: v.optional(v.number()),
     updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
   })
     .index("by_project", ["projectId"])
     .index("by_parent", ["parentTaskId"])

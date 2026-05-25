@@ -21,6 +21,7 @@ import {
   Plus,
   Search,
   Sun,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +32,7 @@ const views = [
   { href: "/projects/upcoming", label: "Upcoming", icon: CalendarRange },
   { href: "/projects/all", label: "All open", icon: LayoutGrid },
   { href: "/projects/completed", label: "Completed", icon: CheckCircle2 },
+  { href: "/projects/deleted", label: "Recently deleted", icon: Trash2 },
 ] as const;
 
 export default function ProjectsSidebar() {
@@ -38,13 +40,16 @@ export default function ProjectsSidebar() {
   const { signOut } = useAuthActions();
   const projects = useQuery(api.projects.list, { includeInactive: false });
   const allTasks = useQuery(api.tasks.listAll);
+  const deletedItems = useQuery(api.tasks.listDeleted);
   const createProject = useMutation(api.projects.create);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
 
   const activeProjectId =
     pathname.startsWith("/projects/") &&
-    !["all", "today", "upcoming", "completed"].includes(pathname.split("/")[2] ?? "")
+    !["all", "today", "upcoming", "completed", "deleted"].includes(
+      pathname.split("/")[2] ?? "",
+    )
       ? (pathname.split("/")[2] as Id<"projects">)
       : null;
 
@@ -96,14 +101,18 @@ export default function ProjectsSidebar() {
       <nav className="mt-4 space-y-0.5 px-2">
         {views.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
-          const countKey =
-            href === "/projects/today"
-              ? "today"
-              : href === "/projects/upcoming"
-                ? "upcoming"
-                : href === "/projects/all"
-                  ? "allOpen"
-                  : "completed";
+          const count =
+            href === "/projects/deleted"
+              ? deletedItems?.length
+              : href === "/projects/today"
+                ? viewCounts?.today
+                : href === "/projects/upcoming"
+                  ? viewCounts?.upcoming
+                  : href === "/projects/all"
+                    ? viewCounts?.allOpen
+                    : href === "/projects/completed"
+                      ? viewCounts?.completed
+                      : undefined;
           return (
             <Link
               key={href}
@@ -112,8 +121,8 @@ export default function ProjectsSidebar() {
             >
               <Icon className="h-4 w-4 shrink-0 text-[var(--muted)]" />
               <span>{label}</span>
-              {viewCounts && (
-                <span className="sidebar-nav-count">{viewCounts[countKey]}</span>
+              {count !== undefined && count > 0 && (
+                <span className="sidebar-nav-count">{count}</span>
               )}
             </Link>
           );

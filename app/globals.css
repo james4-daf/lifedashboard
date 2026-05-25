@@ -163,6 +163,25 @@ body {
   @apply block w-full cursor-text text-left text-base leading-snug;
 }
 
+.task-delete-actions {
+  @apply hidden shrink-0 items-center;
+}
+
+@media (min-width: 768px) {
+  .task-delete-actions {
+    @apply flex opacity-0 pointer-events-none transition;
+  }
+
+  .group:hover .task-delete-actions,
+  .task-delete-actions-visible {
+    @apply opacity-100 pointer-events-auto;
+  }
+}
+
+.task-delete-actions-visible {
+  @apply flex opacity-100 pointer-events-auto;
+}
+
 .task-meta {
   @apply pointer-events-none mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)] opacity-0 transition-opacity group-hover:opacity-100;
 }
